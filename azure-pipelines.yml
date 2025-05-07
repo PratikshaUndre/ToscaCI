@@ -1,26 +1,25 @@
 trigger:
-  - main  # or whichever branch you want to trigger on
+  - main
 
 pool:
-  vmImage: 'windows-latest'  # assuming you're using Microsoft-hosted agents
+  vmImage: 'windows-latest'
 
 jobs:
-- job: RunToscaTasks
-  steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        Get-ChildItem -Path C:\agents\vsts-agent-win-x64-4.255.0 *.xml -File -Recurse | foreach { $_.Delete() }
+  - job: RunToscaTasks
+    steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
 
-        "C:\Tosca_Projects\ExecutionClient\tosca_execution_client.ps1" -toscaServerUrl http://localhost.com -projectName "SampleDex" -events '["Dex Demo"]' -resultsFolderPath "C:\"
-
-  - task: PowerShell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        & "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCI\ToscaCIClient.exe" ^
-        /RunExecution ^
-        /WorkspacePath:"C:\Tosca\Workspace\Default.tws" ^
-        /ExecutionList:"MyExecutionList" ^
-        /ResultDir:"C:\Tosca\Results"
+            if (Test-Path $scriptPath) {
+              Write-Host "Script found at $scriptPath. Executing..."
+              & $scriptPath `
+                -toscaServerUrl http://localhost.com `
+                -projectName "SampleDex" `
+                -events '["Dex Demo"]' `
+                -resultsFolderPath "C:\"
+            } else {
+              throw "Script not found at $scriptPath. Failing pipeline."
+            }

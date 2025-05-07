@@ -1,4 +1,11 @@
 - task: PowerShell@2
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      Get-ChildItem -Path C:\Agents\_work -Include *.xml -File -Recurse | foreach { $_.Delete()}
+      
+      ."C:\Tosca_Projects\ExecutionClient\tosca_execution_client.ps1" -toscaServerUrl http://localhost.com -projectName "SampleDex"  -events '["Dex Demo"]' -resultsFolderPath "C:\"
   inputs:
     targetType: 'inline'
     script: |

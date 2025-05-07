@@ -1,18 +1,18 @@
 trigger:
-  - main  # Or your actual branch name
+  - main  # ✅ list under a mapping key (trigger)
 
 pool:
-  name: Default  # Use your self-hosted agent pool name
+  name: Default  # ✅ mapping (key: value)
 
 jobs:
-- job: ToscaCIExecution
+- job: ToscaCIExecution  # ✅ list inside a mapping key (jobs)
   steps:
     - task: CmdLine@2
       inputs:
         script: |
-          "C:\agents\vsts-agent-win-x64-4.255.0\Client\ToscaCIClient.exe" ^
-            /ServerUrl=http://localhost:8731 ^
-            /ProjectName="SampleDex" ^
-            /Events="Dex Demo" ^
-            /ResultsPath="C:\ToscaResults" ^
-            /ExecutionMode=Run
+          "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCI\TOSCACIClient.exe" ^
+            -m local ^
+            -s "http://localhost:8731" ^
+            -p "SampleDex" ^
+            -t "Dex Demo" ^
+            -r "C:\ToscaResults"

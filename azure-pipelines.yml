@@ -11,7 +11,7 @@ jobs:
         inputs:
           targetType: 'inline'
           script: |
-            $scriptPath = "C:\agents\vsts-agent-win-x64-4.255.0\tosca_execution_client.ps1"
+            $scriptPath = "C:\temp\tosca_execution_client.ps1"
 
             if (Test-Path $scriptPath) {
               Write-Host "Script found at $scriptPath. Executing..."

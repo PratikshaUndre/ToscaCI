@@ -1,25 +1,18 @@
 trigger:
-  - main
+  - main  # Or your actual branch name
 
 pool:
-  vmImage: 'windows-latest'
+  name: Default  # Use your self-hosted agent pool name
 
 jobs:
-  - job: RunToscaTasks
-    steps:
-      - task: PowerShell@2
-        inputs:
-          targetType: 'inline'
-          script: |
-            $scriptPath = "C:\temp\tosca_execution_client.ps1"
-
-            if (Test-Path $scriptPath) {
-              Write-Host "Script found at $scriptPath. Executing..."
-              & $scriptPath `
-                -toscaServerUrl http://localhost.com `
-                -projectName "SampleDex" `
-                -events '["Dex Demo"]' `
-                -resultsFolderPath "C:\"
-            } else {
-              throw "Script not found at $scriptPath. Failing pipeline."
-            }
+- job: ToscaCIExecution
+  steps:
+    - task: CmdLine@2
+      inputs:
+        script: |
+          "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCI\ToscaCIClient.exe" ^
+            /ServerUrl=http://localhost:8731 ^
+            /ProjectName="SampleDex" ^
+            /Events="Dex Demo" ^
+            /ResultsPath="C:\ToscaResults" ^
+            /ExecutionMode=Run

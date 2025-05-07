@@ -10,7 +10,7 @@ jobs:
     - task: CmdLine@2
       inputs:
         script: |
-          "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCI\TOSCACIClient.exe" ^
+          "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" ^
             -m local ^
             -s "http://localhost:8731" ^
             -p "SampleDex" ^

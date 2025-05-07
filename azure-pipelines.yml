@@ -13,7 +13,7 @@ jobs:
       script: |
         Get-ChildItem -Path C:\agents\vsts-agent-win-x64-4.255.0 *.xml -File -Recurse | foreach { $_.Delete() }
 
-        ."C:\Tosca_Projects\ExecutionClient\tosca_execution_client.ps1" -toscaServerUrl http://localhost.com -projectName "SampleDex" -events '["Dex Demo"]' -resultsFolderPath "C:\"
+        "C:\Tosca_Projects\ExecutionClient\tosca_execution_client.ps1" -toscaServerUrl http://localhost.com -projectName "SampleDex" -events '["Dex Demo"]' -resultsFolderPath "C:\"
 
   - task: PowerShell@2
     inputs:

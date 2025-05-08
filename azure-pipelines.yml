@@ -7,11 +7,7 @@ pool:
 jobs:
 - job: ToscaCIExecution
   steps:
-  - task: PowerShell@2
+  - task: Bash@3
     inputs:
       targetType: 'inline'
-      script: |
-        & "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe"-m distribute
-          -toscaServerUrl "http://localhost"
-          -projectName "SampleDex" `
-          -events '["Dex Demo"]'
+      script: '"C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" -m local|distributed -s "http://localhost" -p "SampleDex" -events ''["Dex Demo"]'' -r "C:\agents\result"'

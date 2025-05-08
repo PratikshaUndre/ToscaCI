@@ -11,7 +11,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        & "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" `
-          -toscaServerUrl "http://localhost" `
+        & "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe"-m distribute
+          -toscaServerUrl "http://localhost"
           -projectName "SampleDex" `
           -events '["Dex Demo"]'

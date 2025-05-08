@@ -1,12 +1,46 @@
 trigger:
-  - main
+- main
 
 pool:
-  name: Default
+  vmImage: 'windows-latest'
 
-jobs:
-- job: ToscaCIExecution
-  steps:
-  - task: CmdLine@2
-    inputs:
-      script: '"C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" -m local -s "http://localhost" -p "SampleDex" -events ''["Dex Demo"]'' -r "C:\agents\result"'
+variables:
+  projectName: 'SampleDex'
+  environment: 'Dex'
+  eventId: 'Dex Demo'
+  testSetName: 'JSON Example'
+
+steps:
+
+- task: PowerShell@2
+  name: CallToscaExecutionAPI
+  inputs:
+    targetType: 'inline'
+    script: |
+      $username = "$4e87FE2U5EWYtmglXyibgg"
+      $password = "$lmt1EIuU_U-9FD8skt4GswqAT_nQZd5UeH_cDZQDPzfg"
+      $authHeader = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$username:$password"))
+
+      $headers = @{
+        "Authorization" = "Basic $authHeader"
+        "Content-Type"  = "application/json"
+      }
+
+      $payload = @{
+        projectName = "$(projectName)"
+        executionEnvironment = "$(environment)"
+        events = @(
+          @{
+            eventId = "$(eventId)"
+            parameters = @{
+              testSet = "$(testSetName)"
+            }
+          }
+        )
+        importResult = $true
+        creator = "AzureDevOps"
+      } | ConvertTo-Json -Depth 10
+
+      Write-Host "Calling Tosca Execution API..."
+      $response = Invoke-RestMethod -Method Post -Uri "$(TOSCA_EXECUTION_API_URL)" -Headers $headers -Body $payload
+      Write-Host "API Response: $($response | ConvertTo-Json -Depth 10)"

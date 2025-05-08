@@ -19,7 +19,7 @@ steps:
     script: |
       $username = "$4e87FE2U5EWYtmglXyibgg"
       $password = "$lmt1EIuU_U-9FD8skt4GswqAT_nQZd5UeH_cDZQDPzfg"
-      $authHeader = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$username:$password"))
+      $authHeader = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($username):$($password)"))
 
       $headers = @{
         "Authorization" = "Basic $authHeader"

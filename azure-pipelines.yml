@@ -11,8 +11,8 @@ jobs:
       inputs:
         script: |
           "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" ^
-            -m Distributed ^
-            -s "http://localhost:80" ^
+            -m distributed ^
+            -s "http://localhost:8732" ^
             -p "SampleDex" ^
             -t "Dex Demo" ^
             -r "C:\ToscaResults"

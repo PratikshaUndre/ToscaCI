@@ -17,8 +17,8 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      $username = "$4e87FE2U5EWYtmglXyibgg"
-      $password = "$lmt1EIuU_U-9FD8skt4GswqAT_nQZd5UeH_cDZQDPzfg"
+      $username = "4e87FE2U5EWYtmglXyibgg"
+      $password = "lmt1EIuU_U-9FD8skt4GswqAT_nQZd5UeH_cDZQDPzfg"
       $authHeader = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($username):$($password)"))
 
       $headers = @{
@@ -42,5 +42,5 @@ steps:
       } | ConvertTo-Json -Depth 10
 
       Write-Host "Calling Tosca Execution API..."
-      $response = Invoke-RestMethod -Method Post -Uri "$https://localhost/tosa/api/executions" -Headers $headers -Body $payload
+      $response = Invoke-RestMethod -Method Post -Uri "https://localhost/tosa/api/executions" -Headers $headers -Body $payload
       Write-Host "API Response: $($response | ConvertTo-Json -Depth 10)"

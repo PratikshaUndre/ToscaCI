@@ -11,7 +11,7 @@ jobs:
       inputs:
         script: |
           "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" ^
-            -m local ^
+            -m distributed ^
             -s "http://localhost:8731" ^
             -p "SampleDex" ^
             -t "Dex Demo" ^

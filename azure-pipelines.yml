@@ -12,7 +12,7 @@ jobs:
         script: |
           "C:\agents\vsts-agent-win-x64-4.255.0\Client\TOSCACIClient.exe" ^
             -m distributed ^
-            -s "http://localhost:8731" ^
+            -s "http://localhost:80" ^
             -p "SampleDex" ^
             -t "Dex Demo" ^
             -r "C:\ToscaResults"

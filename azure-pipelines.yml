@@ -47,6 +47,7 @@ steps:
       $headers = @{
           "Authorization" = "Bearer $token"
           "Content-Type"  = "application/json"
+          "X-Tricentis"  = "OK"
       }
 
       # Prepare the JSON body for the request

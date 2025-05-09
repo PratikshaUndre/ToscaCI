@@ -22,16 +22,16 @@ steps:
       $authHeader = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($username):$($password)"))
 
       $headers = @{
-        "Authorization" = "Basic $authHeader"
+        "Authorization" = "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA2RERCREZDODJCM0MxNTVCQ0NCNzg4M0U1NzYwMTJCIiwidHlwIjoiYXQrand0In0.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0IiwibmJmIjoxNzQ2Nzg2OTk4LCJpYXQiOjE3NDY3ODY5OTgsImV4cCI6MTc0Njc5MDU5OCwiYXVkIjpbIkFkbWluQ29uc29sZSIsIkF1dGhlbnRpY2F0aW9uU2VydmljZSIsIkRhdGFJbnRlZ3JpdHlTZXJ2aWNlIiwiRGV4IiwiRXhhbXBsZVNlcnZpY2UiLCJFeGVjdXRpb25SZXN1bHRTZXJ2aWNlIiwiRmlsZVNlcnZpY2UiLCJHYXRld2F5IiwiSHViU2VydmljZSIsIkxpY2Vuc2VBZG1pbmlzdHJhdGlvbiIsIkxpdmVDb21wYXJlU2VydmljZSIsIk1idFNlcnZpY2UiLCJNaWdyYXRpb25TZXJ2aWNlIiwiTmV4dXMiLCJOb3RpZmljYXRpb25TZXJ2aWNlIiwiT3N2U3R1ZGlvIiwiUHJvamVjdFNlcnZpY2UiLCJScGFBcGlHYXRld2F5IiwiU2FwSW50ZWdyYXRpb24iLCJUZXN0RGF0YVNlcnZpY2UiLCJUZXN0RGVzaWduU3R1ZGlvIiwiVG9zY2FBdXRvbWF0aW9uT2JqZWN0U2VydmljZSJdLCJzY29wZSI6WyJBZG1pbkNvbnNvbGVBcGkiLCJhdXRoZW50aWNhdGlvbi5ncm91cHMucmVhZCIsIkF1dGhlbnRpY2F0aW9uU2VydmljZUFwaSIsIkRhdGFJbnRlZ3JpdHlTZXJ2aWNlQXBpIiwiRGV4QXBpIiwiRXhhbXBsZVNlcnZpY2VBcGkiLCJFeGVjdXRpb25SZXN1bHRTZXJ2aWNlQXBpIiwiRmlsZVNlcnZpY2VBcGkiLCJHYXRld2F5QXBpIiwiSHViU2VydmljZUFwaSIsIkxpY2Vuc2VBZG1pbmlzdHJhdGlvbkFwaSIsIkxpdmVDb21wYXJlU2VydmljZUFwaSIsIk1idFNlcnZpY2VBcGkiLCJNaWdyYXRpb25TZXJ2aWNlQXBpIiwiTmV4dXNBcGkiLCJOb3RpZmljYXRpb25TZXJ2aWNlQXBpIiwiT3N2U3R1ZGlvQXBpIiwiUHJvamVjdFNlcnZpY2VBcGkiLCJScGFBcGlHYXRld2F5QXBpIiwiU2FwSW50ZWdyYXRpb25BcGkiLCJUZXN0RGF0YVNlcnZpY2VBcGkiLCJUZXN0RGVzaWduU3R1ZGlvQXBpIiwiVG9zY2FBdXRvbWF0aW9uT2JqZWN0U2VydmljZUFwaSIsInZpc2lvbmFpLmFnZW50LmFwaSIsInZpc2lvbmFpLm5leHVzLmFwaSJdLCJjbGllbnRfaWQiOiJNOVZxamNWY3JFdW9BZ3Y5MDcxNGVRIiwibmFtZSI6IkFkbWluIiwicm9sZSI6WyJEZWZhdWx0VXNlciIsIkFkbWluIl0sInN1YiI6Ijk3OWM4MmQ2LThjZTQtNGY5MS04NzJkLWNiYjg0MzI1ZTAzNSIsInRlbmFudCI6IjBPWTRYT1N6NkVPS1llOU0xMTI3eEEiLCJyZXF1aXJlZHJlZ2lvbiI6ImFueSIsInRlbmFudG5hbWUiOiJEZWZhdWx0IiwiZW1haWwiOiJBZG1pbiIsImdyb3VwcyI6WyJDU0hWT3FnUGJVQzhraE5wMUloWTR3IiwiZWx3Rl9BaVAxMDJya2JqdlJ3a0RBQSIsInB3UU13NXRxYjBHSVFPVGk3bDE5NGciLCJxeGhiZmpCYXlFMnktYWdNUUxpSDBBIiwidG1IekZIT3pZVWVIYnBBOHc5WENTZyIsInlQNzFlSkplT2tpd20xUEdvVUNvM1EiLCJ0WlNUdnN0NXRFeTlWbFFLT1hTSVNnIl0sImp0aSI6IjQ0MDQxNzQxQjYwREI0NkM1Mjg3RTRBOUVEOTRCRkQyIn0.ZwjfhfwdIZxutXplmmezBGQUKbCkYWdbXaF6E9rGf-d4RJm839EC_XUL346-9Uuei7oIFCYIC6MwJeKpfN8lDlUDnxkDNTC91r0cnp8rBVuHYIj8GFwRK_-IgKDEf9Tb9nt4qTAXnV4YMQ8ou1HQZt_kerDRQf14tlyI5MxSBRCfdZa_bWnD9NenXgORV9u1GDzLFcJwd9tylvVOoqJIH-TB4yj4XWslggbCSlU9A-limVXj4wcWpHazFkpPSN9vPukk3Lf1dstEFRR314YZr9LM0bJWVqquhUphzZfPmcSmnXtDYc1_ZGH0vjaH5daBsNqtMw1e21eTlTp-xFmGVQ"
         "Content-Type"  = "application/json"
       }
 
       $payload = @{
-        projectName = "$(projectName)"
-        executionEnvironment = "$(environment)"
+        projectName = "TestCI"
+        executionEnvironment = "Dex"
         events = @(
           @{
-            eventId = "$(eventId)"
+            eventId = "Test"
             parameters = @{
               testSet = "$(testSetName)"
             }

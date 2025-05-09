@@ -4,8 +4,7 @@ trigger:
       - main
 
 pool:
-  vmImage: 'windows-latest'
-
+  name: 'Default'
 variables:
   projectName: 'SampleDex'
   environment: 'Dex'

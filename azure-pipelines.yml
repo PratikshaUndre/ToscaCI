@@ -42,5 +42,5 @@ steps:
       } | ConvertTo-Json -Depth 10
 
       Write-Host "Calling Tosca Execution API..."
-      $response = Invoke-RestMethod -Method Post -Uri "https://localhost/tosa/api/executions" -Headers $headers -Body $payload
+      $response = Invoke-RestMethod -Method Post -Uri "http://localhost:5006/api/Execution/Enqueue" -Headers $headers -Body $payload
       Write-Host "API Response: $($response | ConvertTo-Json -Depth 10)"

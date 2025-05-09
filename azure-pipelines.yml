@@ -41,7 +41,7 @@ steps:
       Write-Host "Access token retrieved successfully"
 
       # Tosca execution API endpoint
-      $uri = "http://127.0.0.1:81:5006/api/Execution/Enqueue"  # Replace with your actual Tosca API endpoint
+      $uri = "http://127.0.0.1:5006/api/Execution/Enqueue"  # Replace with your actual Tosca API endpoint
 
       # Set the authorization header (Bearer token)
       $headers = @{

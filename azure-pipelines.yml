@@ -18,7 +18,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      $authUrl = "http://localhost:81/tua/connect/token"
+      $authUrl = "http://TRI-5CG107640G:81/tua/connect/token"
       $clientId = "M9VqjcVcrEuoAgv90714eQ"
       $clientSecret = "Djdvho9h_EeihnFrFyzCDweKadNGM5FUeiv07kZVw6CA"
 

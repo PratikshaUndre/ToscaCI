@@ -11,7 +11,7 @@ variables:
   environment: 'Dex'
   eventId: 'Test'
   testSetName: 'JSON Example'
-  creator: 'AutomationUser'
+  creator: 'Admin'
 
 steps:
 - task: PowerShell@2

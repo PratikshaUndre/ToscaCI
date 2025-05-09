@@ -41,37 +41,6 @@ steps:
       Write-Host "Access token retrieved successfully"
 
       # Tosca execution API endpoint
-      $uri = "http://127.0.0.1:5006/api/Execution/Enqueue"  # Replace with your actual Tosca API endpoint
+      $uri = "http://127.0.0.1:5006/api/Execution/Enqueue"
 
-      # Set the authorization header (Bearer token)
-      $headers = @{
-          "Authorization" = "Bearer $token"
-          "Content-Type"  = "application/json"
-          "X-Tricentis"  = "OK"
-      }
-
-      # Prepare the JSON body for the request
-      $body = @{
-          "projectName" = $env:projectName
-          "executionEnvironment" = $env:environment
-          "events" = @(
-              @{
-                  "eventId" = $env:eventId
-                  "parameters" = @{}
-                  "characteristics" = @{}
-              }
-          )
-          "importResult" = $true
-          "creator" = $env:creator
-      } | ConvertTo-Json -Depth 5
-
-      # Send the POST request to start the execution
-      $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
-
-      # Check the response and log the execution status
-      if ($response.StatusCode -ne 200) {
-          Write-Error "Failed to start execution: $($response.StatusCode)"
-          exit 1
-      }
-
-      Write-Host "Execution started successfully: $($response.executionId)"
+      $headers

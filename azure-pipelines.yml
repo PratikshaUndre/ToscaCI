@@ -9,7 +9,7 @@ pool:
 variables:
   projectName: 'SampleDex'
   environment: 'Dex'
-  eventId: 'Dex Demo'
+  eventId: 'Test'
   testSetName: 'JSON Example'
   creator: 'AutomationUser'
 

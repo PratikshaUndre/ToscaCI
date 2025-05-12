@@ -16,63 +16,74 @@ variables:
 steps:
 - task: PowerShell@2
   name: CallToscaExecutionAPI
-  displayName: 'Authenticate & Trigger Tosca Execution'
   inputs:
     targetType: 'inline'
     script: |
-      # 1️⃣ Authentication to get the access token
-      $authUrl      = "http://127.0.0.1:81/tua/connect/token"
-      $clientId     = "M9VqjcVcrEuoAgv90714eQ"
+      # Authentication to get the access token
+      $authUrl = "http://127.0.0.1:81/tua/connect/token"
+      $clientId = "M9VqjcVcrEuoAgv90714eQ"
       $clientSecret = "Djdvho9h_EeihnFrFyzCDweKadNGM5FUeiv07kZVw6CA"
 
       $body = @{
-        grant_type    = "client_credentials"
-        client_id     = $clientId
-        client_secret = $clientSecret
+          grant_type    = "client_credentials"
+          client_id     = $clientId
+          client_secret = $clientSecret
       }
 
-      Write-Host "Requesting access token..."
       $response = Invoke-RestMethod -Uri $authUrl -Method Post -Body $body -ContentType "application/x-www-form-urlencoded"
+
       if (-not $response.access_token) {
-        Write-Error "❌ Failed to retrieve access token"
+        Write-Error "Failed to retrieve access token"
         exit 1
       }
-      $token = $response.access_token
-      Write-Host "✅ Access token retrieved successfully"
 
-      # 2️⃣ Build headers with Bearer token
+      $token = $response.access_token
+      Write-Host "Access token retrieved successfully"
+
+      # Tosca execution API endpoint
+      $uri = "http://127.0.0.1:5006/api/Execution/Enqueue"
+
       $headers = @{
-        Authorization = "Bearer $token"
-        "Content-Type" = "application/json"
+          "Authorization" = "Bearer $token"
+          "Content-Type"  = "application/json"
+          "X-Tricentis"   = "OK"
       }
 
-      # 3️⃣ Build your custom JSON payload
-      $payload = @{
-        projectName           = $env:projectName
-        executionEnvironment  = $env:environment
-        events                = @(
-                                @{
-                                  eventId         = $env:eventId
-                                  parameters      = @{}
-                                  characteristics = @{}
-                                }
-                              )
-        importResult          = $false
-        creator               = $env:creator
+      # Build JSON body
+      $requestBody = @{
+          "projectName" = $env:projectName
+          "executionEnvironment" = $env:environment
+          "events" = @(
+              @{
+                  "eventId" = $env:eventId
+                  "parameters" = @{}
+                  "characteristics" = @{}
+              }
+          )
+          "importResult" = $true
+          "creator" = $env:creator
       } | ConvertTo-Json -Depth 5
 
-      Write-Host "Payload:"
-      Write-Host $payload
-
-      # 4️⃣ Trigger the Tosca execution
-      $enqueueUri = "http://127.0.0.1:5006/api/Execution/Enqueue"
-      Write-Host "Enqueuing execution via $enqueueUri..."
       try {
-        $enqueueResponse = Invoke-RestMethod -Uri $enqueueUri -Method Post -Headers $headers -Body $payload
-        Write-Host "✅ Execution enqueued successfully!"
-        Write-Host "Response: $($enqueueResponse | ConvertTo-Json -Depth 3)"
+          Write-Host "Sending this JSON body:"
+          Write-Host $requestBody
+
+          $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $requestBody
+
+          Write-Host "==== Tosca API Response ===="
+          Write-Host ($response | ConvertTo-Json -Depth 5)
+
+          Write-Host "Execution started successfully: $($response.executionId)"
       }
       catch {
-        Write-Error "❌ Failed to enqueue execution: $_"
-        exit 1
+          Write-Error "API call failed: $($_.Exception.Message)"
+
+          if ($_.Exception.Response -ne $null) {
+              $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+              $responseBody = $reader.ReadToEnd()
+              Write-Host "===== Tosca API Error Response ====="
+              Write-Host $responseBody
+          }
+
+          exit 1
       }

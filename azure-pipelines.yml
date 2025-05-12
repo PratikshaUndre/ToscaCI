@@ -16,31 +16,63 @@ variables:
 steps:
 - task: PowerShell@2
   name: CallToscaExecutionAPI
+  displayName: 'Authenticate & Trigger Tosca Execution'
   inputs:
     targetType: 'inline'
     script: |
-      # Authentication to get the access token
-      $authUrl = "http://127.0.0.1:81/tua/connect/token"
-      $clientId = "M9VqjcVcrEuoAgv90714eQ"
+      # 1️⃣ Authentication to get the access token
+      $authUrl      = "http://127.0.0.1:81/tua/connect/token"
+      $clientId     = "M9VqjcVcrEuoAgv90714eQ"
       $clientSecret = "Djdvho9h_EeihnFrFyzCDweKadNGM5FUeiv07kZVw6CA"
 
       $body = @{
-          grant_type    = "client_credentials"
-          client_id     = $clientId
-          client_secret = $clientSecret
+        grant_type    = "client_credentials"
+        client_id     = $clientId
+        client_secret = $clientSecret
       }
 
+      Write-Host "Requesting access token..."
       $response = Invoke-RestMethod -Uri $authUrl -Method Post -Body $body -ContentType "application/x-www-form-urlencoded"
-
       if (-not $response.access_token) {
-        Write-Error "Failed to retrieve access token"
+        Write-Error "❌ Failed to retrieve access token"
         exit 1
       }
-
       $token = $response.access_token
-      Write-Host "Access token retrieved successfully"
+      Write-Host "✅ Access token retrieved successfully"
 
-      # Tosca execution API endpoint
-      $uri = "http://127.0.0.1:5006/api/Execution/Enqueue"
+      # 2️⃣ Build headers with Bearer token
+      $headers = @{
+        Authorization = "Bearer $token"
+        "Content-Type" = "application/json"
+      }
 
-      $headers
+      # 3️⃣ Build your custom JSON payload
+      $payload = @{
+        projectName           = $env:projectName
+        executionEnvironment  = $env:environment
+        events                = @(
+                                @{
+                                  eventId         = $env:eventId
+                                  parameters      = @{}
+                                  characteristics = @{}
+                                }
+                              )
+        importResult          = $false
+        creator               = $env:creator
+      } | ConvertTo-Json -Depth 5
+
+      Write-Host "Payload:"
+      Write-Host $payload
+
+      # 4️⃣ Trigger the Tosca execution
+      $enqueueUri = "http://127.0.0.1:5006/api/Execution/Enqueue"
+      Write-Host "Enqueuing execution via $enqueueUri..."
+      try {
+        $enqueueResponse = Invoke-RestMethod -Uri $enqueueUri -Method Post -Headers $headers -Body $payload
+        Write-Host "✅ Execution enqueued successfully!"
+        Write-Host "Response: $($enqueueResponse | ConvertTo-Json -Depth 3)"
+      }
+      catch {
+        Write-Error "❌ Failed to enqueue execution: $_"
+        exit 1
+      }

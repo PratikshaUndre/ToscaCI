@@ -12,7 +12,7 @@ steps:
     --project "t8lmkDvNwtSpcDCQscmU" \
     --grid "Testim-Grid-before" \
     --branch "Ajay" \
-    --label "BlakeTTA" \
+    --label "test" \
     --report-file testim-tests-report.xml
   displayName: 'npm install testim-cli and run tests'
 

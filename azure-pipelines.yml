@@ -1,18 +1,18 @@
 steps:
 - task: NodeTool@0
   inputs:
-    versionSpec: '20.19.2'
+    versionSpec: '20.19.0'
     # You can also change 'lts' to any supported LTS Node.js version.
   displayName: 'Install Node.js'
 
 - script: |
     npm install -g @testim/testim-cli
     testim \
-    --token "U1G8cYjHuLDt3sfyTfqRtkf6bhq8MVksQJ4Lckak5MIt5fg1rP" \
-    --project "t8lmkDvNwtSpcDCQscmU" \
-    --grid "Testim-Grid-before" \
-    --branch "master" \
-    --label "test" \
+    --token "1UirXpOB5K37HMxV3yK1f9iu0a5x26C2HA5E5jWNMJObLS6sE3" \
+    --project "9sSkgSujJmdD3xYQFFLl" \
+    --grid "testim-ha-grid" \
+    --branch "India PS" \
+    --label "Hidden parameters" \
     --report-file testim-tests-report.xml
   displayName: 'npm install testim-cli and run tests'
 

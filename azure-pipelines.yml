@@ -11,7 +11,7 @@ steps:
     --token "U1G8cYjHuLDt3sfyTfqRtkf6bhq8MVksQJ4Lckak5MIt5fg1rP" \
     --project "t8lmkDvNwtSpcDCQscmU" \
     --grid "Testim-Grid-before" \
-    --branch "Ajay" \
+    --branch "master" \
     --label "test" \
     --report-file testim-tests-report.xml
   displayName: 'npm install testim-cli and run tests'

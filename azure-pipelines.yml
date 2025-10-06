@@ -1,13 +1,83 @@
+# azure-pipelines.yml
+trigger:
+  - main
+
 pool:
   name: Default
 
-steps:
-  - powershell: |
-      # run the .ps1 via a child PowerShell process with ExecutionPolicy Bypass
-      powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\praun\Downloads\tosca_execution_client.ps1" `
-        -toscaServerUrl "http://127.0.0.1:81/" `
-        -events '["Test"]' `
-        -projectName "TestCI" `
-        -clientId "$(ToscaClientId)" `
-        -clientSecret "$(ToscaClientSecret)"
-    displayName: 'Run Tosca execution client (Bypass EP)'
+variables:
+  - name: ToscaClientId
+    value: '8p7RqVEK1km6Xj96INYY2g'
+  - name: ToscaClientSecret
+    value: '' # <<-- set this as a secret in the pipeline UI (do NOT put plaintext here)
+
+stages:
+  - stage: RunTosca
+    displayName: Run Tosca Execution Client
+    jobs:
+      - job: RunToscaJob
+        displayName: Run on self-hosted agent
+        steps:
+          # Ensure sources are checked out (default behavior, explicit for clarity)
+          - checkout: self
+          
+          # Optional: create scripts folder if not present (safe no-op if exists)
+          - powershell: |
+              $scriptsPath = "$(Build.SourcesDirectory)\scripts"
+              if (-not (Test-Path $scriptsPath)) {
+                New-Item -Path $scriptsPath -ItemType Directory -Force | Out-Null
+              }
+            displayName: 'Ensure scripts folder exists'
+
+          # Optional: If you don't store the script in the repo, replace the next step's source URI.
+          # Recommended: commit scripts/tosca_execution_client.ps1 into your repo.
+          - powershell: |
+              $expected = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
+              if (-not (Test-Path $expected)) {
+                Write-Error "Expected script not found: $expected. Please add scripts/tosca_execution_client.ps1 to your repo or download it in a prior step."
+                exit 1
+              }
+              # Unblock if the file is blocked (commonly happens for downloads)
+              try {
+                Unblock-File -Path $expected -ErrorAction Stop
+              } catch {
+                Write-Host "Unblock-File failed or not required: $($_.Exception.Message)"
+              }
+            displayName: 'Validate and unblock script'
+
+          # Run the script in a child PowerShell process using Bypass (does not change machine policy)
+          - powershell: |
+              $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
+              if (-not (Test-Path $scriptPath)) {
+                Write-Error "Script not found at $scriptPath"
+                exit 1
+              }
+
+              # Build argument list safely
+              $args = @(
+                '-toscaServerUrl', 'http://127.0.0.1:81/'
+                '-events', '["Test"]'
+                '-projectName', 'TestCI'
+                '-clientId', '$(ToscaClientId)'
+                '-clientSecret', '$(ToscaClientSecret)'
+              )
+
+              # Start child process with ExecutionPolicy Bypass
+              $quotedArgs = $args | ForEach-Object { if ($_.Contains(' ')) { '"{0}"' -f $_ } else { $_ } } -join ' '
+              Write-Host "Running script: $scriptPath"
+              $psi = New-Object System.Diagnostics.ProcessStartInfo
+              $psi.FileName = 'powershell.exe'
+              $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $quotedArgs"
+              $psi.RedirectStandardOutput = $true
+              $psi.RedirectStandardError  = $true
+              $psi.UseShellExecute = $false
+              $proc = [System.Diagnostics.Process]::Start($psi)
+              $stdout = $proc.StandardOutput.ReadToEnd()
+              $stderr = $proc.StandardError.ReadToEnd()
+              $proc.WaitForExit()
+              Write-Host $stdout
+              if ($proc.ExitCode -ne 0) {
+                Write-Error "Script exited with code $($proc.ExitCode). Stderr:`n$stderr"
+                exit $proc.ExitCode
+              }
+            displayName: 'Run Tosca execution client (ExecutionPolicy Bypass)'

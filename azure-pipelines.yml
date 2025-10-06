@@ -1,27 +1,13 @@
-# azure-pipelines.yml
-trigger:
-  - main
-
 pool:
-    name: Default   # 👈 use your self-hosted agent pool name
-
-variables:
-  # Set these variable names here. Set the actual secret value in the Azure DevOps pipeline UI (mark as secret).
-  - name: ToscaClientId
-    value: '8p7RqVEK1km6Xj96INYY2g'
-  - name: ToscaClientSecret
-    value: 'y80uGn2kvEuqBFv7-u7RpQjmb6SVS9-UqDxl4HlNff9w' # leave empty here and set as secret in pipeline variables
+  name: Default
 
 steps:
-  - task: PowerShell@2
-    displayName: 'Run Tosca execution client'
-    inputs:
-      targetType: 'filePath'
-      # Put the script in your repo under scripts/ or adjust path accordingly.
-      filePath: 'C:\Users\praun\Downloads\tosca_execution_client.ps1'
-      arguments: >
+  - powershell: |
+      # run the .ps1 via a child PowerShell process with ExecutionPolicy Bypass
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\praun\Downloads\tosca_execution_client.ps1" `
         -toscaServerUrl "http://127.0.0.1:81/" `
         -events '["Test"]' `
         -projectName "TestCI" `
         -clientId "$(ToscaClientId)" `
         -clientSecret "$(ToscaClientSecret)"
+    displayName: 'Run Tosca execution client (Bypass EP)'

@@ -9,52 +9,84 @@ variables:
   - name: ToscaClientId
     value: '8p7RqVEK1km6Xj96INYY2g'
   - name: ToscaClientSecret
-    value: '' # <<-- set this as a secret in the pipeline UI (do NOT put plaintext here)
+    value: '' # set this in pipeline Variables (mark as secret)
 
 stages:
-  - stage: RunTosca
-    displayName: Run Tosca Execution Client
+  - stage: DebugAndRunTosca
+    displayName: Debug workspace, then run Tosca script
     jobs:
-      - job: RunToscaJob
-        displayName: Run on self-hosted agent
+      - job: DebugJob
+        displayName: Run on self-hosted agent (with diagnostics)
         steps:
-          # Ensure sources are checked out (default behavior, explicit for clarity)
           - checkout: self
-          
-          # Optional: create scripts folder if not present (safe no-op if exists)
-          - powershell: |
-              $scriptsPath = "$(Build.SourcesDirectory)\scripts"
-              if (-not (Test-Path $scriptsPath)) {
-                New-Item -Path $scriptsPath -ItemType Directory -Force | Out-Null
-              }
-            displayName: 'Ensure scripts folder exists'
 
-          # Optional: If you don't store the script in the repo, replace the next step's source URI.
-          # Recommended: commit scripts/tosca_execution_client.ps1 into your repo.
           - powershell: |
-              $expected = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
-              if (-not (Test-Path $expected)) {
-                Write-Error "Expected script not found: $expected. Please add scripts/tosca_execution_client.ps1 to your repo or download it in a prior step."
-                exit 1
-              }
-              # Unblock if the file is blocked (commonly happens for downloads)
-              try {
-                Unblock-File -Path $expected -ErrorAction Stop
-              } catch {
-                Write-Host "Unblock-File failed or not required: $($_.Exception.Message)"
-              }
-            displayName: 'Validate and unblock script'
+              Write-Host "===== AGENT + ENV INFO ====="
+              Write-Host "Agent machine name: $env:COMPUTERNAME"
+              Write-Host "Agent user: $env:USERNAME"
+              Write-Host "Agent work folder: $env:AGENT_WORKFOLDER"
+              Write-Host "Build.SourcesDirectory: '$(Build.SourcesDirectory)'"
+              Write-Host "System.DefaultWorkingDirectory: $env:BUILD_SOURCESDIRECTORY"
+              Write-Host "Pipeline workspace root (for debugging):"
+              Get-ChildItem -Path "$(Build.SourcesDirectory)" -Force -Directory | ForEach-Object { Write-Host " - $_" }
+            displayName: 'Print agent and workspace variables'
 
-          # Run the script in a child PowerShell process using Bypass (does not change machine policy)
+          - powershell: |
+              $scriptsDir = Join-Path "$(Build.SourcesDirectory)" "scripts"
+              Write-Host "===== CHECK SCRIPTS FOLDER ====="
+              if (-not (Test-Path -Path $scriptsDir)) {
+                Write-Host "SCRIPTS FOLDER NOT FOUND: $scriptsDir"
+                Write-Host "Listing top-level of Build.SourcesDirectory for diagnosis:"
+                Get-ChildItem -Path "$(Build.SourcesDirectory)" -Force | Format-Table Name,Mode,LastWriteTime,Length -AutoSize
+                exit 0
+              } else {
+                Write-Host "Scripts folder exists: $scriptsDir"
+                Write-Host "Files inside scripts (recursive, show hidden/system):"
+                Get-ChildItem -Path $scriptsDir -Recurse -Force | Format-Table FullName,Mode,Length,LastWriteTime -AutoSize
+              }
+            displayName: 'List scripts folder and files (diagnostic)'
+
           - powershell: |
               $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
-              if (-not (Test-Path $scriptPath)) {
-                Write-Error "Script not found at $scriptPath"
+              Write-Host "===== VERIFY SCRIPT FILE ====="
+              if (-not (Test-Path -Path $scriptPath)) {
+                Write-Host "SCRIPT NOT FOUND at: $scriptPath"
+                Write-Host "Attempting to show the immediate parent directory contents for additional clues:"
+                Get-ChildItem -Path (Split-Path -Path $scriptPath -Parent) -Force | Format-Table Name,Mode,Length,LastWriteTime -AutoSize
+                exit 1
+              } else {
+                Write-Host "Script found: $scriptPath"
+                $fi = Get-Item -Path $scriptPath -Force
+                Write-Host "Attributes: $($fi.Attributes)"
+                Write-Host "Length (bytes): $($fi.Length)"
+                Write-Host "LastWriteTime: $($fi.LastWriteTime)"
+                Write-Host "Encoding detection (first 4 bytes in hex):"
+                $bytes = Get-Content -Path $scriptPath -Encoding Byte -TotalCount 4
+                $hex = ($bytes | ForEach-Object { "{0:X2}" -f $_ }) -join ' '
+                Write-Host $hex
+                Write-Host "----- START OF FILE (first 40 lines) -----"
+                Get-Content -Path $scriptPath -TotalCount 40 | ForEach-Object { Write-Host $_ }
+                Write-Host "----- END OF PREVIEW -----"
+              }
+            displayName: 'Show script metadata and preview (diagnostic)'
+
+          - powershell: |
+              $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
+              Write-Host "===== UNBLOCK & RUN (if present) ====="
+              if (-not (Test-Path -Path $scriptPath)) {
+                Write-Error "Script missing; cannot run. See earlier diagnostics."
                 exit 1
               }
 
-              # Build argument list safely
-              $args = @(
+              try {
+                Unblock-File -Path $scriptPath -ErrorAction Stop
+                Write-Host "Unblocked file (if blocked): $scriptPath"
+              } catch {
+                Write-Host "Unblock-File not required or failed: $($_.Exception.Message)"
+              }
+
+              # Build args list without exposing secret content in logs
+              $argsList = @(
                 '-toscaServerUrl', 'http://127.0.0.1:81/'
                 '-events', '["Test"]'
                 '-projectName', 'TestCI'
@@ -62,22 +94,33 @@ stages:
                 '-clientSecret', '$(ToscaClientSecret)'
               )
 
-              # Start child process with ExecutionPolicy Bypass
-              $quotedArgs = $args | ForEach-Object { if ($_.Contains(' ')) { '"{0}"' -f $_ } else { $_ } } -join ' '
-              Write-Host "Running script: $scriptPath"
+              $quotedArgs = $argsList | ForEach-Object {
+                if ($_ -match '\s|["' + "'`]" ) { '"' + $_.Replace('"','\"') + '"' } else { $_ }
+              } -join ' '
+
+              Write-Host "Launching child PowerShell process to run the script (ExecutionPolicy Bypass)."
+              Write-Host "NOTE: The client secret is a pipeline secret and will not be printed in logs."
               $psi = New-Object System.Diagnostics.ProcessStartInfo
               $psi.FileName = 'powershell.exe'
               $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $quotedArgs"
               $psi.RedirectStandardOutput = $true
               $psi.RedirectStandardError  = $true
               $psi.UseShellExecute = $false
+
               $proc = [System.Diagnostics.Process]::Start($psi)
               $stdout = $proc.StandardOutput.ReadToEnd()
               $stderr = $proc.StandardError.ReadToEnd()
               $proc.WaitForExit()
+
+              Write-Host "----- CHILD PROCESS STDOUT -----"
               Write-Host $stdout
+              Write-Host "----- CHILD PROCESS STDERR -----"
+              Write-Host $stderr
+
               if ($proc.ExitCode -ne 0) {
-                Write-Error "Script exited with code $($proc.ExitCode). Stderr:`n$stderr"
+                Write-Error "Script exited with code $($proc.ExitCode). See stderr above."
                 exit $proc.ExitCode
+              } else {
+                Write-Host "Script completed successfully with exit code 0."
               }
-            displayName: 'Run Tosca execution client (ExecutionPolicy Bypass)'
+            displayName: 'Unblock and run script (ExecutionPolicy Bypass)'

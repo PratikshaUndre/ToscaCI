@@ -9,118 +9,50 @@ variables:
   - name: ToscaClientId
     value: '8p7RqVEK1km6Xj96INYY2g'
   - name: ToscaClientSecret
-    value: '' # set this in pipeline Variables (mark as secret)
+    value: '' # set this in pipeline UI and mark as secret
 
 stages:
-  - stage: DebugAndRunTosca
-    displayName: Debug workspace, then run Tosca script
+  - stage: RunTosca
     jobs:
-      - job: DebugJob
-        displayName: Run on self-hosted agent (with diagnostics)
+      - job: RunToscaJob
         steps:
           - checkout: self
 
           - powershell: |
-              Write-Host "===== AGENT + ENV INFO ====="
-              Write-Host "Agent machine name: $env:COMPUTERNAME"
-              Write-Host "Agent user: $env:USERNAME"
-              Write-Host "Agent work folder: $env:AGENT_WORKFOLDER"
-              Write-Host "Build.SourcesDirectory: '$(Build.SourcesDirectory)'"
-              Write-Host "System.DefaultWorkingDirectory: $env:BUILD_SOURCESDIRECTORY"
-              Write-Host "Pipeline workspace root (for debugging):"
-              Get-ChildItem -Path "$(Build.SourcesDirectory)" -Force -Directory | ForEach-Object { Write-Host " - $_" }
-            displayName: 'Print agent and workspace variables'
-
-          - powershell: |
-              $scriptsDir = Join-Path "$(Build.SourcesDirectory)" "scripts"
-              Write-Host "===== CHECK SCRIPTS FOLDER ====="
-              if (-not (Test-Path -Path $scriptsDir)) {
-                Write-Host "SCRIPTS FOLDER NOT FOUND: $scriptsDir"
-                Write-Host "Listing top-level of Build.SourcesDirectory for diagnosis:"
-                Get-ChildItem -Path "$(Build.SourcesDirectory)" -Force | Format-Table Name,Mode,LastWriteTime,Length -AutoSize
-                exit 0
-              } else {
-                Write-Host "Scripts folder exists: $scriptsDir"
-                Write-Host "Files inside scripts (recursive, show hidden/system):"
-                Get-ChildItem -Path $scriptsDir -Recurse -Force | Format-Table FullName,Mode,Length,LastWriteTime -AutoSize
-              }
-            displayName: 'List scripts folder and files (diagnostic)'
-
-          - powershell: |
-              $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
-              Write-Host "===== VERIFY SCRIPT FILE ====="
+              $scriptPath = "$(Build.SourcesDirectory)\tosca_execution_client.ps1"
+              Write-Host "Looking for script at: $scriptPath"
               if (-not (Test-Path -Path $scriptPath)) {
-                Write-Host "SCRIPT NOT FOUND at: $scriptPath"
-                Write-Host "Attempting to show the immediate parent directory contents for additional clues:"
-                Get-ChildItem -Path (Split-Path -Path $scriptPath -Parent) -Force | Format-Table Name,Mode,Length,LastWriteTime -AutoSize
-                exit 1
-              } else {
-                Write-Host "Script found: $scriptPath"
-                $fi = Get-Item -Path $scriptPath -Force
-                Write-Host "Attributes: $($fi.Attributes)"
-                Write-Host "Length (bytes): $($fi.Length)"
-                Write-Host "LastWriteTime: $($fi.LastWriteTime)"
-                Write-Host "Encoding detection (first 4 bytes in hex):"
-                $bytes = Get-Content -Path $scriptPath -Encoding Byte -TotalCount 4
-                $hex = ($bytes | ForEach-Object { "{0:X2}" -f $_ }) -join ' '
-                Write-Host $hex
-                Write-Host "----- START OF FILE (first 40 lines) -----"
-                Get-Content -Path $scriptPath -TotalCount 40 | ForEach-Object { Write-Host $_ }
-                Write-Host "----- END OF PREVIEW -----"
-              }
-            displayName: 'Show script metadata and preview (diagnostic)'
-
-          - powershell: |
-              $scriptPath = "$(Build.SourcesDirectory)\scripts\tosca_execution_client.ps1"
-              Write-Host "===== UNBLOCK & RUN (if present) ====="
-              if (-not (Test-Path -Path $scriptPath)) {
-                Write-Error "Script missing; cannot run. See earlier diagnostics."
+                Write-Error "Script not found at: $scriptPath"
                 exit 1
               }
-
-              try {
-                Unblock-File -Path $scriptPath -ErrorAction Stop
-                Write-Host "Unblocked file (if blocked): $scriptPath"
-              } catch {
-                Write-Host "Unblock-File not required or failed: $($_.Exception.Message)"
-              }
-
-              # Build args list without exposing secret content in logs
-              $argsList = @(
+              try { Unblock-File -Path $scriptPath -ErrorAction SilentlyContinue } catch {}
+              # Build args safely (secret is not printed)
+              $args = @(
                 '-toscaServerUrl', 'http://127.0.0.1:81/'
                 '-events', '["Test"]'
                 '-projectName', 'TestCI'
                 '-clientId', '$(ToscaClientId)'
                 '-clientSecret', '$(ToscaClientSecret)'
               )
-
-              $quotedArgs = $argsList | ForEach-Object {
+              $quoted = $args | ForEach-Object {
                 if ($_ -match '\s|["' + "'`]" ) { '"' + $_.Replace('"','\"') + '"' } else { $_ }
               } -join ' '
-
-              Write-Host "Launching child PowerShell process to run the script (ExecutionPolicy Bypass)."
-              Write-Host "NOTE: The client secret is a pipeline secret and will not be printed in logs."
+              Write-Host "Starting child PowerShell with ExecutionPolicy Bypass..."
               $psi = New-Object System.Diagnostics.ProcessStartInfo
               $psi.FileName = 'powershell.exe'
-              $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $quotedArgs"
+              $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $quoted"
               $psi.RedirectStandardOutput = $true
               $psi.RedirectStandardError  = $true
               $psi.UseShellExecute = $false
-
               $proc = [System.Diagnostics.Process]::Start($psi)
-              $stdout = $proc.StandardOutput.ReadToEnd()
-              $stderr = $proc.StandardError.ReadToEnd()
+              $out = $proc.StandardOutput.ReadToEnd()
+              $err = $proc.StandardError.ReadToEnd()
               $proc.WaitForExit()
-
-              Write-Host "----- CHILD PROCESS STDOUT -----"
-              Write-Host $stdout
-              Write-Host "----- CHILD PROCESS STDERR -----"
-              Write-Host $stderr
-
+              Write-Host $out
               if ($proc.ExitCode -ne 0) {
-                Write-Error "Script exited with code $($proc.ExitCode). See stderr above."
+                Write-Error "Script failed with exit code $($proc.ExitCode). Stderr:`n$err"
                 exit $proc.ExitCode
               } else {
-                Write-Host "Script completed successfully with exit code 0."
+                Write-Host "Script completed successfully."
               }
-            displayName: 'Unblock and run script (ExecutionPolicy Bypass)'
+            displayName: 'Run tos ca_execution_client.ps1 (repo root, Bypass)'
